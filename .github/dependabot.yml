@@ -11,3 +11,9 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # Types track the oldest supported Node.js line; TypeScript majors are adopted deliberately.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']

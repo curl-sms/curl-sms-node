@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24] # dev tooling needs Node 22+; runtime support for 20 is checked below
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Package checks
+        run: npm run check
+
+      - name: Smoke test built package (ESM and CJS)
+        run: |
+          node --input-type=module -e "import { CurlSMS, verifyWebhook, VERSION } from 'curl-sms'; if (typeof CurlSMS !== 'function' || typeof verifyWebhook !== 'function') process.exit(1); console.log('ESM ok', VERSION);"
+          node -e "const { CurlSMS, CurlSMSError } = require('curl-sms'); if (typeof CurlSMS !== 'function' || typeof CurlSMSError !== 'function') process.exit(1); console.log('CJS ok');"
+
+  runtime-node20:
+    name: Runtime (Node 20)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Use the built package on Node 20
+        run: |
+          node --version
+          node --input-type=module -e "
+            import http from 'node:http';
+            import crypto from 'node:crypto';
+            import { CurlSMS, verifyWebhook } from 'curl-sms';
+            const server = http.createServer((req, res) => {
+              res.writeHead(202, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ id: '01TEST', mode: 'test', receiver: '+4915123456789', status: 'queued', segments: 1, encoding: 'gsm7', price: '0.00', error_code: null, created_at: '2026-11-25T10:15:00.000Z', send_at: null, sent_at: null, delivered_at: null, refunded: false }));
+            });
+            await new Promise((r) => server.listen(0, '127.0.0.1', r));
+            const client = new CurlSMS({ apiKey: 'cs_test_example', baseUrl: 'http://127.0.0.1:' + server.address().port });
+            const m = await client.send({ receiver: '+4915123456789', body: 'Hi' });
+            if (m.status !== 'queued') process.exit(1);
+            const t = Math.floor(Date.now() / 1000), body = '{}';
+            const sig = crypto.createHmac('sha256', 'whsec_x').update(t + '.' + body).digest('hex');
+            if (!verifyWebhook('whsec_x', 't=' + t + ',v1=' + sig, body)) process.exit(1);
+            server.close();
+            console.log('Node 20 runtime ok');
+          "
+          node -e "const { CurlSMS } = require('curl-sms'); if (typeof CurlSMS !== 'function') process.exit(1); console.log('CJS ok');"

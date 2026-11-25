@@ -22,7 +22,7 @@ jobs:
       matrix:
         node: [22, 24] # dev tooling needs Node 22+; runtime support for 20 is checked below
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -55,7 +55,7 @@ jobs:
     name: Runtime (Node 20)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24

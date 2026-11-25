@@ -220,6 +220,8 @@ Node.js 20 or later. TypeScript users get types out of the box; no `@types` pack
 
 - Website: [curl-sms.com](https://curl-sms.com)
 - Docs: [curl-sms.com/docs](https://curl-sms.com/docs)
+- Node.js SDK docs: [curl-sms.com/docs/node](https://curl-sms.com/docs/node)
+- All integrations: [curl-sms.com/integrations](https://curl-sms.com/integrations)
 - API reference: [curl-sms.com/docs/api](https://curl-sms.com/docs/api)
 - Pricing: [curl-sms.com/pricing](https://curl-sms.com/pricing)
 - Other clients and examples: [github.com/curl-sms](https://github.com/curl-sms)

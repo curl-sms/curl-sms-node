@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # create the GitHub release
-      id-token: write # npm provenance
+      id-token: write # npm trusted publishing (OIDC) and provenance
     steps:
       - uses: actions/checkout@v7
 
@@ -38,10 +38,9 @@ jobs:
       - run: npm run build
       - run: npm run check
 
+      # Trusted publishing: npm verifies this workflow via OIDC, no token is stored.
       - name: Publish
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Extract release notes from CHANGELOG.md
         run: |
